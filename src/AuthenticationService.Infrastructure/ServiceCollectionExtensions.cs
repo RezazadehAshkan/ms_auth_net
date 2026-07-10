@@ -1,0 +1,37 @@
+using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Npgsql;
+
+namespace AuthenticationService.Infrastructure;
+
+public static class ServiceCollectionExtensions
+{
+    public class DBProperties(string host, string name, string user, string password)
+    {
+        private readonly string Host = host;
+        private readonly string Name = name;
+        private readonly string User = user;
+        private readonly string Password = password;
+
+        public string GetHost() => Host;
+        public string GetName() => Name;
+        public string GetUser() => User;
+        public string GetPassword() => Password;
+    }
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, DBProperties dbProperties)
+    {
+        var builder = new NpgsqlConnectionStringBuilder
+        {
+            Host = dbProperties.GetHost(),
+            Database = dbProperties.GetName(),
+            Username = dbProperties.GetUser(),
+            Password = dbProperties.GetPassword(),
+        };
+
+        services.AddDbContext<Persistence.AuthenticationDbContext>(options =>
+            options.UseNpgsql(builder.ConnectionString));
+
+        return services;
+    }
+}
