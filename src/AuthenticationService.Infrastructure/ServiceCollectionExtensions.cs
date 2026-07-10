@@ -2,6 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using AuthenticationService.Infrastructure.Repositories;
+using AuthenticationService.Application.Users.Signup;
+using AuthenticationService.Domain.Repositories;
 
 namespace AuthenticationService.Infrastructure;
 
@@ -31,6 +34,10 @@ public static class ServiceCollectionExtensions
 
         services.AddDbContext<Persistence.AuthenticationDbContext>(options =>
             options.UseNpgsql(builder.ConnectionString));
+
+        // Register repositories and application services
+        services.AddScoped<IUserRepository, UserRepository>();
+        services.AddScoped<SignupService>();
 
         return services;
     }

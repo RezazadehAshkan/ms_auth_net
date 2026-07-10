@@ -1,4 +1,5 @@
 using AuthenticationService.Infrastructure;
+using AuthenticationService.Application.Users.Signup;
 using DotNetEnv;
 
 var candidatePaths = new[]
@@ -67,6 +68,12 @@ app.MapGet("/weatherforecast", () =>
     return forecast;
 })
 .WithName("GetWeatherForecast");
+
+app.MapPost("/signup", async (SignupRequest request, SignupService signupService) =>
+{
+    var response = await signupService.ExecuteAsync(request);
+    return Results.Ok(response);
+}).WithName("Signup");
 
 app.Run();
 
