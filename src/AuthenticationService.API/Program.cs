@@ -1,4 +1,5 @@
 using AuthenticationService.Infrastructure;
+using AuthenticationService.Application;
 using AuthenticationService.Application.Users.Signup;
 using DotNetEnv;
 
@@ -32,12 +33,13 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddInfrastructure(new ServiceCollectionExtensions.DBProperties(
+builder.Services.AddInfrastructure(new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBProperties(
     Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost",
     Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "authdb",
     Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "authuser",
     Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword"
 ));
+builder.Services.AddApplicationServices();
 builder.Services.AddOpenApi();
 
 var app = builder.Build();
