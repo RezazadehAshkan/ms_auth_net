@@ -73,8 +73,8 @@ app.MapGet("/weatherforecast", () =>
 
 app.MapPost("/signup", async (SignupRequest request, SignupService signupService) =>
 {
-    var response = await signupService.ExecuteAsync(request);
-    return Results.Ok(response);
+    await signupService.ExecuteAsync(request);
+    return Results.Ok(new { });
 }).WithName("Signup");
 
 app.Run();

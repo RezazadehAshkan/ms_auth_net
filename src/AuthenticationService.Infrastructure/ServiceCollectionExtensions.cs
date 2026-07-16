@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Npgsql;
+using AuthenticationService.Application.Interfaces;
 using AuthenticationService.Infrastructure.Repositories;
 using AuthenticationService.Application.Users.Signup;
 using AuthenticationService.Domain.Repositories;
@@ -37,7 +38,7 @@ public static class ServiceCollectionExtensions
 
         // Register repositories and application services
         services.AddScoped<IUserRepository, UserRepository>();
-        services.AddScoped<SignupService>();
+        services.AddScoped<IPasswordHasher, Services.PasswordHasher>();
 
         return services;
     }

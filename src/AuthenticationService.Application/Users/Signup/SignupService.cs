@@ -1,14 +1,18 @@
 using System;
+using AuthenticationService.Application.Interfaces;
 using AuthenticationService.Domain.Entities;
 using AuthenticationService.Domain.Repositories;
+
 namespace AuthenticationService.Application.Users.Signup
 {
     
     public class SignupService{
             private readonly IUserRepository _users;
-            public SignupService(IUserRepository users)
+            private readonly IPasswordHasher _passwordHasher;
+            public SignupService(IUserRepository users, IPasswordHasher passwordHasher)
                 {
                     _users = users;
+                    _passwordHasher = passwordHasher;
                 }
 
         public async Task<SignupResponse> ExecuteAsync(SignupRequest request)
@@ -21,7 +25,7 @@ namespace AuthenticationService.Application.Users.Signup
             var user = new User(
                 request.Username,
                 request.Email,
-                request.Password
+                _passwordHasher.HashPassword(request.Password)
             );
 
             var userId = await _users.AddUser(user);
