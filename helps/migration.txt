@@ -1,0 +1,12 @@
+dotnet add src/AuthenticationService.Infrastructure/AuthenticationService.Infrastructure.csproj package Microsoft.EntityFrameworkCore.Design
+
+dotnet tool install --global dotnet-ef
+
+dotnet ef migrations add InitialCreate \
+  --project src/AuthenticationService.Infrastructure/AuthenticationService.Infrastructure.csproj \
+  --startup-project src/AuthenticationService.API/AuthenticationService.API.csproj \
+  --output-dir Persistence/Migrations
+
+  dotnet ef database update \
+  --project src/AuthenticationService.Infrastructure/AuthenticationService.Infrastructure.csproj \
+  --startup-project src/AuthenticationService.API/AuthenticationService.API.csproj
