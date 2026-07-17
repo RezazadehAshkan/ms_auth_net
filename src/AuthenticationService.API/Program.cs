@@ -2,6 +2,7 @@ using AuthenticationService.Infrastructure;
 using AuthenticationService.Application;
 using AuthenticationService.Application.Users.Signup;
 using AuthenticationService.Application.Users.Login;
+using AuthenticationService.Application.Users.RefreshToken;
 using DotNetEnv;
 
 var candidatePaths = new[]
@@ -42,9 +43,12 @@ builder.Services.AddInfrastructure(
         Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword"
     ),
     Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? "development-secret-key",
-    int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MINUTES"), out var expirationMinutes)
-        ? expirationMinutes
-        : 60
+    int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS"), out var expirationMs)
+        ? expirationMs
+        : 3600000,
+    int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS_REFRESHTOKEN"), out var refreshExpirationMs)
+        ? refreshExpirationMs
+        : 7200000
 );
 builder.Services.AddApplicationServices();
 builder.Services.AddOpenApi();
@@ -66,7 +70,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
@@ -94,6 +98,17 @@ app.MapPost("/login", async (LoginRequest request, LoginService loginService) =>
 
     return Results.Ok(response);
 }).WithName("Login");
+
+app.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenService refreshTokenService) =>
+{
+    var response = await refreshTokenService.RefreshTokenAsync(request);
+    if (response == null)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(response);
+}).WithName("RefreshToken");
 
 app.Run();
 

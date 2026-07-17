@@ -70,5 +70,27 @@ namespace AuthenticationService.Infrastructure.Services
                 return false;
             }
         }
+        private string HashTokenSync(string token)
+        {
+            using (var sha256 = System.Security.Cryptography.SHA256.Create())
+            {
+                var bytes = System.Text.Encoding.UTF8.GetBytes(token);
+                var hash = sha256.ComputeHash(bytes);
+                return Convert.ToBase64String(hash);
+            }
+        }
+        public async Task<string> HashTokenAsync(string token)
+        {
+            return await Task.Run(() => HashTokenSync(token));
+        }
+        public string GenerateRefreshToken()
+        {
+            var randomNumber = new byte[32];
+            using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+            {
+                rng.GetBytes(randomNumber);
+                return Convert.ToBase64String(randomNumber);
+            }
+        }
     }
 }

@@ -2,7 +2,7 @@ dotnet add src/AuthenticationService.Infrastructure/AuthenticationService.Infras
 
 dotnet tool install --global dotnet-ef
 
-dotnet ef migrations add InitialCreate \
+dotnet ef migrations add NAME \
   --project src/AuthenticationService.Infrastructure/AuthenticationService.Infrastructure.csproj \
   --startup-project src/AuthenticationService.API/AuthenticationService.API.csproj \
   --output-dir Persistence/Migrations

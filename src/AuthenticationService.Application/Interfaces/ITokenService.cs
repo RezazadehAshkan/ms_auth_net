@@ -4,6 +4,7 @@ namespace AuthenticationService.Application.Interfaces
     {
         string GenerateJwtToken(string userId, string username, string email);
         bool ValidateJwtToken(string token, out string userId, out string username, out string email);
-    
+        Task<string> HashTokenAsync(string token);
+        string GenerateRefreshToken();
     }
 }
