@@ -24,9 +24,17 @@ namespace AuthenticationService.Infrastructure.Repositories
         }
         public async Task<bool> UserExistsByEmailAsync(string email)
         {
-            // Implement the logic to check if a user exists by email
-            // For example, using Entity Framework Core:
+            
             return await _dbContext.Users.AnyAsync(u => u.Email == email);
+        }
+        public async Task<User?> GetUserByUsernameAsync(string username)
+        {
+                        return await _dbContext.Users.FirstOrDefaultAsync(u => u.Username == username);
+        }
+        public async Task UpdateUserAsync(User user)
+        {
+            _dbContext.Users.Update(user);
+            await _dbContext.SaveChangesAsync();
         }
     }
 }

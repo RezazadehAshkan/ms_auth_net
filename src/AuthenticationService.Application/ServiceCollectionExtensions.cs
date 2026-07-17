@@ -1,6 +1,7 @@
 using System;
 using Microsoft.Extensions.DependencyInjection;
 using AuthenticationService.Application.Users.Signup;
+using AuthenticationService.Application.Users.Login;
 
 namespace AuthenticationService.Application;
 
@@ -10,6 +11,7 @@ public static class ServiceCollectionExtensions
     {
         
         services.AddScoped<SignupService>();
+        services.AddScoped<LoginService>();
         //I will register other services
 
         return services;

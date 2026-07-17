@@ -23,7 +23,7 @@ public static class ServiceCollectionExtensions
         public string GetUser() => User;
         public string GetPassword() => Password;
     }
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, DBProperties dbProperties)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, DBProperties dbProperties, string secretKey, int tokenExpirationMs)
     {
         var builder = new NpgsqlConnectionStringBuilder
         {
@@ -39,6 +39,7 @@ public static class ServiceCollectionExtensions
         // Register repositories and application services
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IPasswordHasher, Services.PasswordHasher>();
+        services.AddScoped<ITokenService>(provider => new Services.TokenService(secretKey, tokenExpirationMs));
 
         return services;
     }
