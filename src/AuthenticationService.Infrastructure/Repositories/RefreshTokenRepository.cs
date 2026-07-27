@@ -30,10 +30,18 @@ namespace AuthenticationService.Infrastructure.Repositories
             _dbContext.RefreshTokens.Update(refreshToken);
             await _dbContext.SaveChangesAsync();
         }
-        public async Task<RefreshToken?> GetLastRefreshTokenByUserIdAsync(Guid userId)
+        public async Task<RefreshToken?> GetLastRefreshTokenByUserIdAsync(Guid userId, Guid? excludeTokenId = null)
         {
-            return await _dbContext.RefreshTokens
-                .Where(rt => rt.UserId == userId)
+            var query = _dbContext.RefreshTokens
+                .Where(rt => rt.UserId == userId);
+
+            if (excludeTokenId.HasValue)
+            {
+                var exclude = excludeTokenId.Value;
+                query = query.Where(rt => rt.Id != exclude);
+            }
+
+            return await query
                 .OrderByDescending(rt => rt.ExpiresAt)
                 .FirstOrDefaultAsync();
         }

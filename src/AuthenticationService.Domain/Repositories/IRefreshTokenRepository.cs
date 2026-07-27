@@ -9,6 +9,6 @@ namespace AuthenticationService.Domain.Repositories
         Task<Guid> AddRefreshToken(RefreshToken refreshToken);
         Task<RefreshToken?> GetRefreshTokenAsync(string hashedRefreshToken);
         Task UpdateRefreshTokenAsync(RefreshToken refreshToken);
-        Task<RefreshToken?> GetLastRefreshTokenByUserIdAsync(Guid userId);
+        Task<RefreshToken?> GetLastRefreshTokenByUserIdAsync(Guid userId, Guid? excludeTokenId = null);
     }
 }

@@ -11,16 +11,15 @@ namespace AuthenticationService.Application.Users.Login
         private readonly IPasswordHasher _passwordHasher;
         private readonly ITokenService _tokenService;
 
-        private readonly IRefreshTokenRepository _refreshTokens;
+        private readonly IRefreshTokenFactory _refreshTokenFactory;
 
-        // private readonly int _tokenExpirationMs;
-        public LoginService(IUserRepository users, IPasswordHasher passwordHasher, ITokenService tokenService, IRefreshTokenRepository refreshTokens)
+        private readonly int _tokenExpirationMs = 15 * 60 * 1000; // 15 minutes in milliseconds
+        public LoginService(IUserRepository users, IPasswordHasher passwordHasher, ITokenService tokenService, IRefreshTokenFactory refreshTokenFactory)
         {
             _users = users;
             _passwordHasher = passwordHasher;
             _tokenService = tokenService;
-            _refreshTokens = refreshTokens;
-            // _tokenExpirationMs = tokenExpirationMs;
+            _refreshTokenFactory = refreshTokenFactory;
 
         }
         public async Task<LoginResponse?> LoginAsync(LoginRequest request)
@@ -36,27 +35,11 @@ namespace AuthenticationService.Application.Users.Login
                 return null;
 
             var accessToken = _tokenService.GenerateJwtToken(user.Id.ToString(), user.Username, user.Email);
-
-            var latestRefreshToken = await _refreshTokens.GetLastRefreshTokenByUserIdAsync(user.Id);
-
-
-            var unHashedNewRefreshToken = _tokenService.GenerateRefreshToken();
-            var hashedNewRefreshToken = await _tokenService.HashTokenAsync(unHashedNewRefreshToken);
-            var newRefreshToken = new AuthenticationService.Domain.Entities.RefreshToken(
-                userId: user.Id,
-                hashedToken: hashedNewRefreshToken,
-                expiresAt: DateTime.UtcNow.AddDays(7)
-            );
+            var unHashedNewRefreshToken = (await _refreshTokenFactory.CreateAsync(user.Id)).unHashedToken;
             user.UpdateLastLogin();
             await _users.UpdateUserAsync(user);
-            await _refreshTokens.AddRefreshToken(newRefreshToken);
-            if (latestRefreshToken != null)
-            {
-                latestRefreshToken.ReplaceWith(newRefreshToken.Id);
-                await _refreshTokens.UpdateRefreshTokenAsync(latestRefreshToken);
-            }
-
-            return new LoginResponse(accessToken, unHashedNewRefreshToken, 1);
+            var expirationTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + _tokenExpirationMs;
+            return new LoginResponse(accessToken, unHashedNewRefreshToken, expirationTimestamp);
         }
 
     }

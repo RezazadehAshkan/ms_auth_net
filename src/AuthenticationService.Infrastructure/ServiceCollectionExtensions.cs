@@ -42,6 +42,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordHasher, Services.PasswordHasher>();
         services.AddScoped<ITokenService>(provider => new Services.TokenService(secretKey, tokenExpirationMs));
+        services.AddScoped<IRefreshTokenFactory, Services.RefreshTokenFactory>();
 
         return services;
     }
