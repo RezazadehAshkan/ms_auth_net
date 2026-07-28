@@ -1,6 +1,8 @@
 using AuthenticationService.Infrastructure;
 using AuthenticationService.Application;
 using AuthenticationService.Application.Users.Signup;
+using AuthenticationService.Application.Users.Login;
+using AuthenticationService.Application.Users.RefreshToken;
 using DotNetEnv;
 
 var candidatePaths = new[]
@@ -33,12 +35,21 @@ var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-builder.Services.AddInfrastructure(new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBProperties(
-    Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost",
-    Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "authdb",
-    Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "authuser",
-    Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword"
-));
+builder.Services.AddInfrastructure(
+    new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBProperties(
+        Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost",
+        Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "authdb",
+        Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "authuser",
+        Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword"
+    ),
+    Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? "development-secret-key",
+    int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS"), out var expirationMs)
+        ? expirationMs
+        : 3600000,
+    int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS_REFRESHTOKEN"), out var refreshExpirationMs)
+        ? refreshExpirationMs
+        : 7200000
+);
 builder.Services.AddApplicationServices();
 builder.Services.AddOpenApi();
 
@@ -59,7 +70,7 @@ var summaries = new[]
 
 app.MapGet("/weatherforecast", () =>
 {
-    var forecast =  Enumerable.Range(1, 5).Select(index =>
+    var forecast = Enumerable.Range(1, 5).Select(index =>
         new WeatherForecast
         (
             DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
@@ -76,6 +87,28 @@ app.MapPost("/signup", async (SignupRequest request, SignupService signupService
     await signupService.ExecuteAsync(request);
     return Results.Ok(new { });
 }).WithName("Signup");
+
+app.MapPost("/login", async (LoginRequest request, LoginService loginService) =>
+{
+    var response = await loginService.LoginAsync(request);
+    if (response == null)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(response);
+}).WithName("Login");
+
+app.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenService refreshTokenService) =>
+{
+    var response = await refreshTokenService.RefreshTokenAsync(request);
+    if (response == null)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(response);
+}).WithName("RefreshToken");
 
 app.Run();
 
