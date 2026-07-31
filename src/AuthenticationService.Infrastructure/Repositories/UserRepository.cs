@@ -36,5 +36,16 @@ namespace AuthenticationService.Infrastructure.Repositories
             _dbContext.Users.Update(user);
             await _dbContext.SaveChangesAsync();
         }
+        public async Task<string?> GetUserIdByEmailAsync(string Email)
+        {
+            return await _dbContext.Users
+                .Where(u => u.Email == Email)
+                .Select(u => u.Id.ToString())
+                .FirstOrDefaultAsync();
+        }
+        public async Task<User?> GetUserByIdAsync(string userId)
+        {
+            return await _dbContext.Users.FirstOrDefaultAsync(u => u.Id.ToString() == userId);
+        }
     }
 }

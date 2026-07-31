@@ -85,7 +85,11 @@ namespace AuthenticationService.Infrastructure.Services
         }
         public string GenerateRefreshToken()
         {
-            var randomNumber = new byte[32];
+            return GenerateRandomToken();
+        }
+        public string GenerateRandomToken(int bytes = 32)
+        {
+            var randomNumber = new byte[bytes];
             using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
             {
                 rng.GetBytes(randomNumber);

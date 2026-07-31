@@ -10,10 +10,11 @@ namespace AuthenticationService.Domain.Repositories
         Task<bool> UserExistsByEmailAsync(string email);
         Task<User?> GetUserByUsernameAsync(string username);
         Task UpdateUserAsync(User user);
+        Task<string?> GetUserIdByEmailAsync(string Email);
 
-        //Task<User> GetUserByIdAsync(Guid userId);
+        Task<User?> GetUserByIdAsync(string userId);
         //Task<User> GetUserByUsernameAsync(string username);
-        
+
         //Task DeleteUserAsync(Guid userId);
     }
 }
