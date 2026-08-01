@@ -42,7 +42,7 @@ builder.Services.AddInfrastructure(
         Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "authdb",
         Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "authuser",
         Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword",
-        null
+        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_PORT"), out var p) ? p : 5432
     ),
     Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? "development-secret-key",
     int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS"), out var expirationMs)
