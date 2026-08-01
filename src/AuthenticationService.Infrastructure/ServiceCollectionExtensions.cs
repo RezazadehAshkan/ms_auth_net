@@ -6,25 +6,28 @@ using AuthenticationService.Application.Interfaces;
 using AuthenticationService.Infrastructure.Repositories;
 using AuthenticationService.Application.Users.Signup;
 using AuthenticationService.Domain.Repositories;
+using StackExchange.Redis;
 
 namespace AuthenticationService.Infrastructure;
 
 public static class ServiceCollectionExtensions
 {
-    public class DBProperties(string host, string name, string user, string password)
+    public class DBProperties(string host, string name, string user, string password, int? port)
     {
         private readonly string Host = host;
         private readonly string Name = name;
         private readonly string User = user;
         private readonly string Password = password;
+        private readonly int? Port = port;
 
         public string GetHost() => Host;
         public string GetName() => Name;
         public string GetUser() => User;
         public string GetPassword() => Password;
+        public int? GetPort() => Port;
     }
     public static IServiceCollection AddInfrastructure(this IServiceCollection services,
-     DBProperties dbProperties, string secretKey, int tokenExpirationMs, int refreshTokenExpirationMs)
+     DBProperties dbProperties, string secretKey, int tokenExpirationMs, int refreshTokenExpirationMs, DBProperties tempDBProperties)
     {
         var builder = new NpgsqlConnectionStringBuilder
         {
@@ -32,6 +35,7 @@ public static class ServiceCollectionExtensions
             Database = dbProperties.GetName(),
             Username = dbProperties.GetUser(),
             Password = dbProperties.GetPassword(),
+            Port = dbProperties.GetPort() ?? 5432
         };
 
         services.AddDbContext<Persistence.AuthenticationDbContext>(options =>
@@ -43,6 +47,13 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IPasswordHasher, Services.PasswordHasher>();
         services.AddScoped<ITokenService>(provider => new Services.TokenService(secretKey, tokenExpirationMs));
         services.AddScoped<IRefreshTokenFactory, Services.RefreshTokenFactory>();
+        services.AddSingleton<IConnectionMultiplexer>(_ =>
+        {
+            return ConnectionMultiplexer.Connect(
+                $"{tempDBProperties.GetHost()}:{tempDBProperties.GetPort()},password={tempDBProperties.GetPassword()}");
+        });
+        services.AddScoped<ITemporaryStore, Services.DragonflyStore>();
+
 
         return services;
     }

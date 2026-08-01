@@ -18,15 +18,25 @@ public class AuthenticationDbContext : DbContext
 
         modelBuilder.Entity<RefreshToken>(entity =>
         {
-        entity.HasOne(x => x.User)
-            .WithMany()
-            .HasForeignKey(x => x.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
+            entity.HasOne(x => x.User)
+                .WithMany()
+                .HasForeignKey(x => x.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
 
-        entity.HasIndex(x => x.UserId);
+            entity.HasIndex(x => x.UserId);
 
-        entity.HasIndex(x => x.TokenHash)
+            entity.HasIndex(x => x.TokenHash)
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<User>(entity =>
+        {
+
+            entity.HasIndex(x => x.Email)
+                .IsUnique();
+            entity.HasIndex(x => x.Username)
             .IsUnique();
         });
+
     }
 }

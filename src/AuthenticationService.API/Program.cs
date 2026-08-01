@@ -3,6 +3,7 @@ using AuthenticationService.Application;
 using AuthenticationService.Application.Users.Signup;
 using AuthenticationService.Application.Users.Login;
 using AuthenticationService.Application.Users.RefreshToken;
+using AuthenticationService.Application.Users.ForgotPassword;
 using DotNetEnv;
 
 var candidatePaths = new[]
@@ -40,7 +41,8 @@ builder.Services.AddInfrastructure(
         Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost",
         Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "authdb",
         Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "authuser",
-        Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword"
+        Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword",
+        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_PORT"), out var p) ? p : 5432
     ),
     Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? "development-secret-key",
     int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS"), out var expirationMs)
@@ -48,7 +50,14 @@ builder.Services.AddInfrastructure(
         : 3600000,
     int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS_REFRESHTOKEN"), out var refreshExpirationMs)
         ? refreshExpirationMs
-        : 7200000
+        : 7200000,
+new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBProperties(
+        Environment.GetEnvironmentVariable("DRAGONFLY_HOST") ?? "localhost",
+        "name",
+        "user",
+        Environment.GetEnvironmentVariable("DRAGONFLY_PASSWORD") ?? "secret",
+        int.TryParse(Environment.GetEnvironmentVariable("DRAGONFLY_PORT"), out var p) ? p : 6379
+    )
 );
 builder.Services.AddApplicationServices();
 builder.Services.AddOpenApi();
@@ -109,6 +118,78 @@ app.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenService 
 
     return Results.Ok(response);
 }).WithName("RefreshToken");
+
+app.MapPost("/reset-password/request", async (ForgotPasswordRequest request, ResetPasswordService resetPasswordService) =>
+{
+    var response = await resetPasswordService.RequestOTPAsync(request);
+    if (response == null)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(response);
+}).WithName("ResetPasswordRequest");
+
+app.MapPost("/reset-password/verifyOtp", async (VerifyOtpRequest request, ResetPasswordService resetPasswordService) =>
+{
+    var response = await resetPasswordService.VerifyOtpAsync(request);
+    if (response == null)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(response);
+}).WithName("VerifyResetPasswordOtp");
+
+app.MapPost("/reset-password", async (ResetPasswordRequest request, ResetPasswordService resetPasswordService) =>
+{
+    var response = await resetPasswordService.ResetPasswordAsync(request);
+    if (response == null)
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(response);
+}).WithName("ResetPasswordOtp");
+
+
+app.MapGet("/test/crash", () =>
+{
+    Environment.FailFast("Intentional crash for testing");
+    return "unreachable";
+});
+
+app.MapGet("/test/cpu-load", () =>
+{
+    var end = DateTime.UtcNow.AddSeconds(30);
+
+    while (DateTime.UtcNow < end)
+    {
+        _ = Math.Sqrt(Random.Shared.NextDouble());
+    }
+
+    return Results.Ok("CPU load finished");
+});
+
+var memory = new List<byte[]>();
+
+app.MapGet("/test/memory-load", () =>
+{
+    for (int i = 0; i < 100; i++)
+    {
+        var block = new byte[10 * 1024 * 1024]; // 10 MB
+
+        // Force physical memory allocation
+        for (int j = 0; j < block.Length; j += 4096)
+        {
+            block[j] = 1;
+        }
+
+        memory.Add(block);
+    }
+
+    return Results.Ok($"{memory.Count * 10} MB allocated");
+});
 
 app.Run();
 
