@@ -5,17 +5,10 @@ using AuthenticationService.Application.Users.Login;
 using AuthenticationService.Application.Users.RefreshToken;
 using AuthenticationService.Application.Users.ForgotPassword;
 using DotNetEnv;
-
-var candidatePaths = new[]
-{
-    Path.Combine(AppContext.BaseDirectory, ".env"),
-    Path.Combine(AppContext.BaseDirectory, "..", "..", "..", "src", "AuthenticationService.API", ".env"),
-    Path.Combine(Directory.GetCurrentDirectory(), ".env"),
-    Path.Combine(Directory.GetCurrentDirectory(), "src", "AuthenticationService.API", ".env")
-};
-
-var envFilePath = candidatePaths.FirstOrDefault(File.Exists);
-if (envFilePath is not null)
+using AuthenticationService.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
+var envFilePath = ".env";
+if (File.Exists(envFilePath))
 {
     try
     {
@@ -27,36 +20,30 @@ if (envFilePath is not null)
         Console.WriteLine($"Failed to load .env from {envFilePath}: {ex.Message}");
     }
 }
-else
-{
-    Console.WriteLine("No .env file found in candidate paths.");
-}
-
 var builder = WebApplication.CreateBuilder(args);
-
 // Add services to the container.
 // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
 builder.Services.AddInfrastructure(
     new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBProperties(
-        Environment.GetEnvironmentVariable("POSTGRES_HOST") ?? "localhost",
-        Environment.GetEnvironmentVariable("POSTGRES_DB") ?? "authdb",
-        Environment.GetEnvironmentVariable("POSTGRES_USER") ?? "authuser",
-        Environment.GetEnvironmentVariable("POSTGRES_PASSWORD") ?? "authpassword",
-        int.TryParse(Environment.GetEnvironmentVariable("POSTGRES_PORT"), out var p) ? p : 5432
+        builder.Configuration["POSTGRES_HOST"] ?? "localhost",
+        builder.Configuration["POSTGRES_DB"] ?? "authdb",
+        builder.Configuration["POSTGRES_USER"] ?? "authuser",
+        builder.Configuration["POSTGRES_PASSWORD"] ?? "authpassword",
+        int.TryParse(builder.Configuration["POSTGRES_PORT"], out var pgp) ? pgp : 5432
     ),
-    Environment.GetEnvironmentVariable("JWT_SECRET_KEY") ?? "development-secret-key",
-    int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS"), out var expirationMs)
+    builder.Configuration["JWT_SECRET_KEY"] ?? "development-secret-key",
+    int.TryParse(builder.Configuration["JWT_EXPIRATION_MS"], out var expirationMs)
         ? expirationMs
         : 3600000,
-    int.TryParse(Environment.GetEnvironmentVariable("JWT_EXPIRATION_MS_REFRESHTOKEN"), out var refreshExpirationMs)
+    int.TryParse(builder.Configuration["JWT_EXPIRATION_MS_REFRESHTOKEN"], out var refreshExpirationMs)
         ? refreshExpirationMs
         : 7200000,
 new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBProperties(
-        Environment.GetEnvironmentVariable("DRAGONFLY_HOST") ?? "localhost",
+        builder.Configuration["DRAGONFLY_HOST"] ?? "localhost",
         "name",
         "user",
-        Environment.GetEnvironmentVariable("DRAGONFLY_PASSWORD") ?? "secret",
-        int.TryParse(Environment.GetEnvironmentVariable("DRAGONFLY_PORT"), out var p) ? p : 6379
+        builder.Configuration["DRAGONFLY_PASSWORD"] ?? "secret",
+        int.TryParse(builder.Configuration["DRAGONFLY_PORT"], out var p) ? p : 6379
     )
 );
 builder.Services.AddApplicationServices();
@@ -64,10 +51,16 @@ builder.Services.AddOpenApi();
 
 var app = builder.Build();
 
+
+
 // Configure the HTTP request pipeline.
 if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
+}
+else
+{
+    await app.Services.ApplyDBMigrationsAsync();
 }
 
 app.UseHttpsRedirection();
@@ -93,8 +86,15 @@ app.MapGet("/weatherforecast", () =>
 
 app.MapPost("/signup", async (SignupRequest request, SignupService signupService) =>
 {
-    await signupService.ExecuteAsync(request);
-    return Results.Ok(new { });
+    try
+    {
+        await signupService.ExecuteAsync(request);
+        return Results.Ok(new { });
+    }
+    catch (InvalidOperationException ex)
+    {
+        return Results.BadRequest(new { message = ex.Message });
+    }
 }).WithName("Signup");
 
 app.MapPost("/login", async (LoginRequest request, LoginService loginService) =>

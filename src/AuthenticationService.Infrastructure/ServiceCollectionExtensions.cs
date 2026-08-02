@@ -57,4 +57,15 @@ public static class ServiceCollectionExtensions
 
         return services;
     }
+
+    public static async Task ApplyDBMigrationsAsync(
+        this IServiceProvider serviceProvider)
+    {
+        using var scope = serviceProvider.CreateScope();
+
+        var context = scope.ServiceProvider
+            .GetRequiredService<Persistence.AuthenticationDbContext>();
+
+        await context.Database.MigrateAsync();
+    }
 }

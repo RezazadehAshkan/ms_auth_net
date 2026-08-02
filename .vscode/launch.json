@@ -1,0 +1,15 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": ".NET Core Launch Web API",
+      "type": "coreclr",
+      "request": "launch",
+      "program": "${workspaceFolder}/src/AuthenticationService.API/bin/Debug/net10.0/AuthenticationService.API.dll",
+      "cwd": "${workspaceFolder}/src/AuthenticationService.API",
+      "env": {
+        "ASPNETCORE_ENVIRONMENT": "Development"
+      }
+    }
+  ]
+}
