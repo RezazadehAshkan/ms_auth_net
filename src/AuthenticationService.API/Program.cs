@@ -5,8 +5,6 @@ using AuthenticationService.Application.Users.Login;
 using AuthenticationService.Application.Users.RefreshToken;
 using AuthenticationService.Application.Users.ForgotPassword;
 using DotNetEnv;
-using AuthenticationService.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 var envFilePath = ".env";
 if (File.Exists(envFilePath))
 {
