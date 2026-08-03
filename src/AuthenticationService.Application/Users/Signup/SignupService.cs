@@ -29,10 +29,17 @@ namespace AuthenticationService.Application.Users.Signup
                 request.Email,
                 _passwordHasher.HashPassword(request.Password)
             );
+            try
+            {
+                var userId = await _users.AddUser(user);
 
-            var userId = await _users.AddUser(user);
-
-            return new SignupResponse(userId);
+                return new SignupResponse(userId);
+            }
+            catch (Exception ex)
+            {
+                // Handle other exceptions
+                throw new InvalidOperationException("Error creating user", ex);
+            }
         }
     }
 }
