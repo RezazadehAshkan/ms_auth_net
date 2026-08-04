@@ -1,6 +1,6 @@
 services:
   ms-auth:
-    image: ms-auth:v3
+    image: ms-auth:v4
     ports:
       - '8080:8080'
     env_file:
