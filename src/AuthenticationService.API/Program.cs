@@ -5,6 +5,10 @@ using AuthenticationService.Application.Users.Login;
 using AuthenticationService.Application.Users.RefreshToken;
 using AuthenticationService.Application.Users.ForgotPassword;
 using DotNetEnv;
+using Microsoft.AspNetCore.HttpLogging;
+using Serilog;
+using Serilog.Formatting.Compact;
+using System.ComponentModel.DataAnnotations;
 var envFilePath = ".env";
 if (File.Exists(envFilePath))
 {
@@ -18,9 +22,28 @@ if (File.Exists(envFilePath))
         Console.WriteLine($"Failed to load .env from {envFilePath}: {ex.Message}");
     }
 }
+
 var builder = WebApplication.CreateBuilder(args);
+
+/** Configure Serilog for logging */
+var logger = new LoggerConfiguration()
+    .MinimumLevel.Information()
+    .Enrich.FromLogContext()
+    .WriteTo.Console(new CompactJsonFormatter());
+
+if (builder.Environment.IsDevelopment())
+{
+    logger.WriteTo.File(
+        new CompactJsonFormatter(),
+        $"{builder.Configuration["LOG_FILE_PATH"]}-.json",
+        rollingInterval: RollingInterval.Day);
+}
+Log.Logger = logger.CreateLogger();
+builder.Host.UseSerilog();
+
 // Add services to the container.
-// Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
+
+/** Adding Infrastructure services (like database context, repositories, etc.) */
 builder.Services.AddInfrastructure(
     new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBProperties(
         builder.Configuration["POSTGRES_HOST"] ?? "localhost",
@@ -44,11 +67,23 @@ new AuthenticationService.Infrastructure.ServiceCollectionExtensions.DBPropertie
         int.TryParse(builder.Configuration["DRAGONFLY_PORT"], out var p) ? p : 6379
     )
 );
+/** Adding Application services (like business logic, use cases, etc.) */
 builder.Services.AddApplicationServices();
 builder.Services.AddOpenApi();
+builder.Services.AddValidation();
+
+builder.Services.AddHttpLogging(options =>
+{
+    options.LoggingFields =
+        HttpLoggingFields.RequestPropertiesAndHeaders |
+        HttpLoggingFields.ResponsePropertiesAndHeaders |
+        HttpLoggingFields.Duration |
+        HttpLoggingFields.RequestBody |
+        HttpLoggingFields.ResponseBody;
+});
 
 var app = builder.Build();
-
+app.UseHttpLogging();
 
 
 // Configure the HTTP request pipeline.
@@ -63,29 +98,11 @@ else
 
 app.UseHttpsRedirection();
 
-var summaries = new[]
-{
-    "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
-};
-
-app.MapGet("/weatherforecast", () =>
-{
-    var forecast = Enumerable.Range(1, 5).Select(index =>
-        new WeatherForecast
-        (
-            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
-            Random.Shared.Next(-20, 55),
-            summaries[Random.Shared.Next(summaries.Length)]
-        ))
-        .ToArray();
-    return forecast;
-})
-.WithName("GetWeatherForecast");
-
 app.MapPost("/signup", async (SignupRequest request, SignupService signupService) =>
 {
     try
     {
+        Log.Information("Signup request received for email: {Email}", request.Email);
         await signupService.ExecuteAsync(request);
         return Results.Ok(new { });
     }
@@ -188,6 +205,40 @@ app.MapGet("/test/memory-load", () =>
 
     return Results.Ok($"{memory.Count * 10} MB allocated");
 });
+
+//health endpoint for test purpose it gets health from input and returns it as response
+app.MapGet("/test/health", ([Required] bool health) =>
+{
+    if (health)
+    {
+        Log.Information("Health check passed");
+        return Results.Ok(new { status = "Healthy" });
+    }
+    else
+    {
+        Log.Error("Health check failed");
+        return Results.StatusCode(503);
+
+    }
+}).WithName("HealthCheck");
+
+app.MapGet("/weatherforecast", () =>
+{
+    var summaries = new[]
+        {
+            "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
+        };
+    var forecast = Enumerable.Range(1, 5).Select(index =>
+        new WeatherForecast
+        (
+            DateOnly.FromDateTime(DateTime.Now.AddDays(index)),
+            Random.Shared.Next(-20, 55),
+            summaries[Random.Shared.Next(summaries.Length)]
+        ))
+        .ToArray();
+    return forecast;
+})
+.WithName("GetWeatherForecast");
 
 app.Run();
 
