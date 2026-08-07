@@ -91,9 +91,14 @@ if (app.Environment.IsDevelopment())
 {
     app.MapOpenApi();
 }
+if (bool.TryParse(builder.Configuration["APPLY_MIGRATIONS_ON_STARTUP"], out var applyMigrations) && applyMigrations)
+{
+    Log.Information("migration on startup is enabled");
+    await app.Services.ApplyDBMigrationsAsync();
+}
 else
 {
-    await app.Services.ApplyDBMigrationsAsync();
+    Log.Information("migration on startup is disabled");
 }
 
 app.UseHttpsRedirection();
@@ -221,6 +226,32 @@ app.MapGet("/test/health", ([Required] bool health) =>
 
     }
 }).WithName("HealthCheck");
+
+app.MapGet("/test/slow", async ([Required] int seconds) =>
+{
+    await Task.Delay(TimeSpan.FromSeconds(seconds));
+    return Results.Ok(new { message = $"Response delayed by {seconds} seconds" });
+});
+
+app.MapGet("/health/ready", () =>
+{
+    Log.Information("Readiness check passed");
+    return Results.Ok(new { status = "Ready" });
+}).WithName("HealthReady");
+
+app.MapGet("/health/live", () =>
+{
+    //random answer for liveness check to simulate a real-world scenario
+    var random = new Random();
+    if (random.Next(0, 10) < 1) // 10% chance to fail
+    {
+        Log.Error("Liveness check failed");
+        return Results.StatusCode(503);
+    }
+    Log.Information("Liveness check passed");
+    return Results.Ok(new { status = "Alive" });
+}).WithName("HealthLive");
+
 
 app.MapGet("/weatherforecast", () =>
 {

@@ -1,0 +1,52 @@
+minikube image load ms-auth:v6
+minikube image ls | grep ms-auth
+kubectl config set-context --current --namespace=auth
+kubectl get pods -l app=ms-auth -w
+kubectl get pods -l app=ms-auth   -o custom-columns='POD:.metadata.name,IMAGE:.spec.containers[0].image,READY:.status.containerStatuses[0].ready' -w
+
+//up
+kubectl config set-context --current --namespace=auth
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/postgres.yaml
+kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s
+kubectl apply -f k8s/migration-job.yaml
+kubectl wait --for=condition=complete job/auth-db-migration --timeout=300s
+kubectl apply -f k8s/dragonfly.yaml
+kubectl wait --for=condition=ready pod -l app=dragonfly --timeout=120s
+kubectl apply -f k8s/service-deployment.yaml
+kubectl apply -f k8s/service-service.yaml
+kubectl rollout status deployment/ms-auth --timeout=10s
+kubectl apply -f k8s/service-hpa.yaml
+kubectl port-forward service/ms-auth 8080:8080
+
+
+//up-without-migration
+kubectl config set-context --current --namespace=auth
+kubectl apply -f k8s/configmap.yaml
+kubectl apply -f k8s/secret.yaml
+kubectl apply -f k8s/postgres.yaml
+kubectl wait --for=condition=ready pod -l app=postgres --timeout=120s
+kubectl apply -f k8s/dragonfly.yaml
+kubectl wait --for=condition=ready pod -l app=dragonfly --timeout=120s
+kubectl apply -f k8s/service-deployment.yaml
+kubectl apply -f k8s/service-service.yaml
+kubectl rollout status deployment/ms-auth --timeout=10s
+kubectl apply -f k8s/service-hpa.yaml
+kubectl port-forward service/ms-auth 8080:8080
+
+//down
+kubectl config set-context --current --namespace=auth
+kubectl delete job auth-db-migration
+kubectl delete deployment postgres
+kubectl delete svc postgres
+kubectl delete pvc postgres-pvc
+kubectl delete deployment dragonfly
+kubectl delete svc dragonfly
+kubectl delete deployment ms-auth
+kubectl delete svc ms-auth
+kubectl delete configmap auth-config
+kubectl delete secret auth-secret
+kubectl scale deployment ms-auth --replicas=0
+kubectl delete hpa ms-auth
+kubectl delete pod --all
