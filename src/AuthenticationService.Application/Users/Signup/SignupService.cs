@@ -2,6 +2,7 @@ using System;
 using AuthenticationService.Application.Interfaces;
 using AuthenticationService.Domain.Entities;
 using AuthenticationService.Domain.Repositories;
+using Microsoft.Extensions.Logging;
 
 namespace AuthenticationService.Application.Users.Signup
 {
@@ -10,20 +11,17 @@ namespace AuthenticationService.Application.Users.Signup
     {
         private readonly IUserRepository _users;
         private readonly IPasswordHasher _passwordHasher;
-        public SignupService(IUserRepository users, IPasswordHasher passwordHasher)
+        private readonly ILogger<SignupService> _logger;
+        public SignupService(IUserRepository users, IPasswordHasher passwordHasher, ILogger<SignupService> logger)
         {
             _users = users;
             _passwordHasher = passwordHasher;
+            _logger = logger;
         }
 
         public async Task<SignupResponse> ExecuteAsync(SignupRequest request)
         {
-            /*
-            var existing = await _users.UserExistsByEmailAsync(request.Email);
-
-            if (existing)
-                throw new Exception("Email already exists");
-            */
+            _logger.LogInformation("Starting signup for username {Username}", request.Username);
             var user = new User(
                 request.Username,
                 request.Email,
@@ -33,11 +31,12 @@ namespace AuthenticationService.Application.Users.Signup
             {
                 var userId = await _users.AddUser(user);
 
+                _logger.LogInformation("Signup completed for username {Username} with user ID {UserId}", request.Username, userId);
                 return new SignupResponse(userId);
             }
             catch (Exception ex)
             {
-                // Handle other exceptions
+                _logger.LogError(ex, "Error creating user for username {Username}", request.Username);
                 throw new InvalidOperationException("Error creating user", ex);
             }
         }

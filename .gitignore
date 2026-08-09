@@ -59,4 +59,5 @@ nunit-*.xml
 .fake
 efbundle
 .efbundle
-secret.yaml
+observability/.env
+k8s/secret.yaml

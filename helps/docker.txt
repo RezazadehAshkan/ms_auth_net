@@ -11,3 +11,7 @@ docker run --rm \
   --env-file ./src/AuthenticationService.API/.env \
   --entrypoint /app/efbundle \
   ms-auth:v6
+
+  //elasticsearch
+  docker compose exec elasticsearch \
+  bin/elasticsearch-reset-password -u kibana_system -i

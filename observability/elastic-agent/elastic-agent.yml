@@ -1,0 +1,22 @@
+outputs:
+  default:
+    type: elasticsearch
+    hosts:
+      - http://elasticsearch:9200
+    username: elastic
+    password: ${env.ELASTIC_PASSWORD}
+    ssl:
+      verification_mode: none
+
+inputs:
+  - type: filestream
+    id: auth-service-logs
+    streams:
+      - data_stream:
+          type: logs
+          dataset: auth.api
+        paths:
+          - /logs/*.json
+        parsers:
+          - ndjson:
+              target: ''

@@ -25,11 +25,12 @@ namespace AuthenticationService.Application.Users.Login
         }
         public async Task<LoginResponse?> LoginAsync(LoginRequest request)
         {
+            _logger.LogInformation("Starting login for username {Username}", request.Username);
             var user = await _users.GetUserByUsernameAsync(request.Username);
 
             if (user == null)
             {
-                _logger.LogWarning($"didnot found user with username {request.Username}");
+                _logger.LogInformation("Login failed because user {Username} was not found", request.Username);
                 return null;
             }
 
@@ -37,7 +38,7 @@ namespace AuthenticationService.Application.Users.Login
 
             if (!isPasswordValid)
             {
-                _logger.LogWarning($"Invalid password for user {request.Username}");
+                _logger.LogInformation("Login failed because the password was invalid for username {Username}", request.Username);
                 return null;
             }
 
@@ -46,6 +47,7 @@ namespace AuthenticationService.Application.Users.Login
             user.UpdateLastLogin();
             await _users.UpdateUserAsync(user);
             var expirationTimestamp = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() + _tokenExpirationMs;
+            _logger.LogInformation("Login completed for username {Username}", request.Username);
             return new LoginResponse(accessToken, unHashedNewRefreshToken, expirationTimestamp);
         }
 

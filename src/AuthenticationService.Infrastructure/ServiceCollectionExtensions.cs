@@ -7,6 +7,7 @@ using AuthenticationService.Infrastructure.Repositories;
 using AuthenticationService.Application.Users.Signup;
 using AuthenticationService.Domain.Repositories;
 using StackExchange.Redis;
+using Microsoft.Extensions.Logging;
 
 namespace AuthenticationService.Infrastructure;
 
@@ -45,7 +46,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<IUserRepository, UserRepository>();
         services.AddScoped<IRefreshTokenRepository, RefreshTokenRepository>();
         services.AddScoped<IPasswordHasher, Services.PasswordHasher>();
-        services.AddScoped<ITokenService>(provider => new Services.TokenService(secretKey, tokenExpirationMs));
+        services.AddScoped<ITokenService>(provider => new Services.TokenService(secretKey, tokenExpirationMs, provider.GetRequiredService<ILogger<Services.TokenService>>()));
         services.AddScoped<IRefreshTokenFactory, Services.RefreshTokenFactory>();
         services.AddSingleton<IConnectionMultiplexer>(_ =>
         {
@@ -66,6 +67,17 @@ public static class ServiceCollectionExtensions
         var context = scope.ServiceProvider
             .GetRequiredService<Persistence.AuthenticationDbContext>();
 
-        await context.Database.MigrateAsync();
+        var logger = scope.ServiceProvider.GetRequiredService<ILoggerFactory>().CreateLogger("DatabaseMigrations");
+        logger.LogInformation("Starting database migrations");
+        try
+        {
+            await context.Database.MigrateAsync();
+            logger.LogInformation("Database migrations completed");
+        }
+        catch (Exception ex)
+        {
+            logger.LogError(ex, "Database migrations failed");
+            throw new InvalidOperationException("Database migrations failed.", ex);
+        }
     }
 }
