@@ -57,3 +57,6 @@ TestResult.xml
 nunit-*.xml
 
 .fake
+efbundle
+.efbundle
+secret.yaml

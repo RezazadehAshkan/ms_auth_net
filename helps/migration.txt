@@ -10,3 +10,12 @@ dotnet ef migrations add NAME \
   dotnet ef database update \
   --project src/AuthenticationService.Infrastructure/AuthenticationService.Infrastructure.csproj \
   --startup-project src/AuthenticationService.API/AuthenticationService.API.csproj
+
+
+
+  dotnet ef migrations bundle \
+  --project src/AuthenticationService.Infrastructure \
+  --startup-project src/AuthenticationService.API \
+  --self-contained \
+  --target-runtime linux-x64 \
+  --output ./efbundle

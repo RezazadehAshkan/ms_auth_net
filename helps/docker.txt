@@ -1,6 +1,13 @@
-docker build -t ms-auth:v3 .
+docker build -t ms-auth:v8 .
 docker run --env-file src/AuthenticationService.API/.env -p 8080:8080 ms-auth:v3
 docker compose down -v
 docker compose up
 docker compose --env-file ./src/AuthenticationService.API/.env up
 docker exec -it ms-auth-dragonfly-1 sh
+
+//migration bundle
+docker run --rm \
+  --network ms-auth_default \
+  --env-file ./src/AuthenticationService.API/.env \
+  --entrypoint /app/efbundle \
+  ms-auth:v6

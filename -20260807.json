@@ -1,0 +1,1 @@
+{"@t":"2026-08-07T09:10:11.8251996Z","@mt":"An error occurred using the connection to database '{database}' on server '{server}'.","@l":"Error","database":"authdb","server":"tcp://localhost:5432","EventId":{"Id":20004,"Name":"Microsoft.EntityFrameworkCore.Database.Connection.ConnectionError"},"SourceContext":"Microsoft.EntityFrameworkCore.Database.Connection"}

@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-config
+data:
+  POSTGRES_HOST: 'postgres'
+  POSTGRES_PORT: '5432'
+  POSTGRES_DB: 'AuthenticationService'
+  JWT_EXPIRATION_MS: '3600000'
+  JWT_EXPIRATION_MS_REFRESHTOKEN: '7200000'
+  DRAGONFLY_HOST: 'dragonfly'
+  DRAGONFLY_PORT: '6379'
+  LOG_FILE_PATH: 'logs/auth-service'
+  APPLY_MIGRATIONS_ON_STARTUP: 'false'
+  ASPNETCORE_ENVIRONMENT: 'Staging'
