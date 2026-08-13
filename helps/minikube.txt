@@ -1,8 +1,12 @@
-minikube image load ms-auth:v6
+minikube image load ms-auth:latest
 minikube image ls | grep ms-auth
 kubectl config set-context --current --namespace=auth
+kubectl config set-context --current --namespace=observability
 kubectl get pods -l app=ms-auth -w
 kubectl get pods -l app=ms-auth   -o custom-columns='POD:.metadata.name,IMAGE:.spec.containers[0].image,READY:.status.containerStatuses[0].ready' -w
+kubectl apply -f k8s/service-deployment.yaml -n auth
+kubectl rollout restart deployment/ms-auth -n auth
+kubectl rollout status deployment/ms-auth -n auth
 
 //up
 kubectl config set-context --current --namespace=auth
@@ -50,3 +54,24 @@ kubectl delete secret auth-secret
 kubectl scale deployment ms-auth --replicas=0
 kubectl delete hpa ms-auth
 kubectl delete pod --all
+
+//up-observability
+kubectl apply -f k8s/observability/elastic-configMap.yaml
+kubectl apply -f k8s/observability/elastic-secret.yaml
+kubectl apply -f k8s/observability/elastic-configMap.yaml -n kube-system
+kubectl apply -f k8s/observability/elastic-secret.yaml -n kube-system
+kubectl apply -f k8s/observability/elasticsearch.yaml
+kubectl apply -f k8s/observability/kibana.yaml
+kubectl apply -f k8s/observability/elastic-agent-config.yaml
+kubectl apply -f k8s/observability/elastic-agent.yaml
+
+//down-observability
+kubectl delete deployment kibana
+kubectl delete svc kibana
+kubectl delete statefulsets elasticsearch
+kubectl delete svc elasticsearch
+kubectl delete configmap elastic-config
+kubectl delete secret elastic-secret
+kubectl delete configmap elastic-agent-config
+kubectl delete serviceaccount elastic-agent
+kubectl delete daemonset elastic-agent

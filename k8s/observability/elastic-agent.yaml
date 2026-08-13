@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: elastic-agent
+  namespace: kube-system
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: elastic-agent
+  namespace: kube-system
+spec:
+  selector:
+    matchLabels:
+      app: elastic-agent
+
+  template:
+    metadata:
+      labels:
+        app: elastic-agent
+
+    spec:
+      serviceAccountName: elastic-agent
+
+      containers:
+        - name: elastic-agent
+          image: docker.elastic.co/elastic-agent/elastic-agent:9.1.0
+
+          args:
+            - -c
+            - /etc/elastic-agent/agent.yml
+            - -e
+
+          env:
+            - name: ES_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: elastic-config
+                  key: ELASTIC_HOST_WITH_NAMESPACE
+
+            - name: ES_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-secret
+                  key: ELASTIC_USERNAME
+
+            - name: ES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: elastic-secret
+                  key: ELASTIC_PASSWORD
+
+          securityContext:
+            runAsUser: 0
+
+          volumeMounts:
+            - name: config
+              mountPath: /etc/elastic-agent/agent.yml
+              subPath: agent.yml
+              readOnly: true
+
+            - name: varlog
+              mountPath: /var/log
+              readOnly: true
+
+      volumes:
+        - name: config
+          configMap:
+            name: elastic-agent-config
+
+        - name: varlog
+          hostPath:
+            path: /var/log

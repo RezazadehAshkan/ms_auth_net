@@ -26,6 +26,8 @@ namespace AuthenticationService.Application.Users.Login
         public async Task<LoginResponse?> LoginAsync(LoginRequest request)
         {
             _logger.LogInformation("Starting login for username {Username}", request.Username);
+            _logger.LogWarning("Starting login for username {Username}", request.Username);
+
             var user = await _users.GetUserByUsernameAsync(request.Username);
 
             if (user == null)

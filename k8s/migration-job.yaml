@@ -11,7 +11,7 @@ spec:
 
       containers:
         - name: migration
-          image: ms-auth:v7
+          image: ms-auth:latest
           imagePullPolicy: IfNotPresent
 
           envFrom:
