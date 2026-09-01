@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: elastic-agent-config
+  namespace: kube-system
+data:
+  agent.yml: |
+    outputs:
+      default:
+        type: elasticsearch
+        hosts:
+          - ${ES_HOST}
+        username: ${ES_USERNAME}
+        password: ${ES_PASSWORD}
+
+    inputs:
+      - type: filestream
+        id: kubernetes-container-logs
+        use_output: default
+
+        data_stream:
+          type: logs
+          dataset: kubernetes.container
+
+        prospector:
+          scanner:
+            symlinks: true
+
+        parsers:
+        - container: ~
+        - ndjson:
+            target: ""
+            add_error_key: true
+
+        paths:
+          - /var/log/containers/*.log

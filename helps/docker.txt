@@ -1,4 +1,6 @@
-docker build -t ms-auth:v8 .
+docker build -t ms-auth:v9 .
+docker tag ms-auth:v9 ms-auth:latest
+minikube image load ms-auth:latest
 docker run --env-file src/AuthenticationService.API/.env -p 8080:8080 ms-auth:v3
 docker compose down -v
 docker compose up
@@ -11,3 +13,12 @@ docker run --rm \
   --env-file ./src/AuthenticationService.API/.env \
   --entrypoint /app/efbundle \
   ms-auth:v6
+
+  //elasticsearch
+  docker compose exec elasticsearch \
+  bin/elasticsearch-reset-password -u kibana_system -i
+
+
+//monitoring
+docker exec -it elasticsearch \
+  bin/elasticsearch-reset-password -u kibana_system
