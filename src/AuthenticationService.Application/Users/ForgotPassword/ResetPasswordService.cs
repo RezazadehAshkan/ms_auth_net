@@ -1,3 +1,4 @@
+using System.Security.Cryptography;
 using AuthenticationService.Application.Interfaces;
 using AuthenticationService.Domain.Entities;
 using AuthenticationService.Domain.Repositories;
@@ -17,6 +18,24 @@ namespace AuthenticationService.Application.Users.ForgotPassword
         {
             _logger.LogInformation("Generating temporary reset-token key");
             return $"ResetTokens:{resetToken}";
+        }
+
+        private string GenerateSecureOtp(int digits = 6)
+        {
+            _logger.LogInformation("Generating cryptographically secure {Digits}-digit OTP", digits);
+            using (var rng = RandomNumberGenerator.Create())
+            {
+                // 4 bytes = 32 bits of entropy, far more than a 6-digit OTP needs
+                // (max 999_999 < 2^20 ≈ 1M).
+                var buffer = new byte[4];
+                rng.GetBytes(buffer);
+
+                // Map [0, 2^32) -> [0, 10^digits). Tiny modulo bias is acceptable for OTPs.
+                var raw = BitConverter.ToUInt32(buffer, 0);
+                var max = (uint)Math.Pow(10, digits);   // 1_000_000 for 6 digits
+                var otp = raw % max;
+                return otp.ToString($"D{digits}");      // zero-pad so it's always 6 chars
+            }
         }
 
         public ResetPasswordService(IUserRepository users, ITemporaryStore temporaryStore, IPasswordHasher passwordHasher, ITokenService tokenService, ILogger<ResetPasswordService> logger)
@@ -39,7 +58,7 @@ namespace AuthenticationService.Application.Users.ForgotPassword
                 return new ForgotPasswordResponse(false, "User with the provided email does not exist.");
             }
 
-            var otp = new Random().Next(100000, 999999).ToString();
+            var otp = GenerateSecureOtp(digits: 6);
             var setOTPResult = await _temporaryStore.SetAsync(request.EmailAddress, otp, TimeSpan.FromMinutes(5));
             if (setOTPResult)
             {

@@ -3,6 +3,7 @@ using AuthenticationService.Application;
 using AuthenticationService.Application.Users.Signup;
 using AuthenticationService.Application.Users.Login;
 using AuthenticationService.Application.Users.RefreshToken;
+using AuthenticationService.Application.Users.Logout;
 using AuthenticationService.Application.Users.ForgotPassword;
 using DotNetEnv;
 using Microsoft.AspNetCore.HttpLogging;
@@ -138,6 +139,17 @@ app.MapPost("/refresh", async (RefreshTokenRequest request, RefreshTokenService 
 
     return Results.Ok(response);
 }).WithName("RefreshToken");
+
+app.MapPost("/logout", async (LogoutRequest request, LogoutService logoutService) =>
+{
+    var response = await logoutService.LogoutAsync(request);
+    if (response == null)
+    {
+        return Results.BadRequest(new { message = "Refresh token is required." });
+    }
+
+    return Results.Ok(response);
+}).WithName("Logout");
 
 app.MapPost("/reset-password/request", async (ForgotPasswordRequest request, ResetPasswordService resetPasswordService) =>
 {
