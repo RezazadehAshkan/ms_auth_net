@@ -1,2 +1,6 @@
 <Solution>
+  <Folder Name="/src/">
+    <Project Path="src/AuthenticationService.Application/AuthenticationService.Application.csproj" />
+    <Project Path="src/AuthenticationService.Domain/AuthenticationService.Domain.csproj" />
+  </Folder>
 </Solution>
